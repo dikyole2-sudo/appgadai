@@ -1,0 +1,153 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Nasabah {
+  id          String   @id @default(cuid())
+  customerID  String   @unique
+  nama        String
+  jenisKelamin JenisKelamin
+  ktp         String
+  alamat      String
+  noHP        String
+  pekerjaan   String
+  sumberInfo  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  loans       Loan[]
+  transactions Transaction[]
+}
+
+model Loan {
+  id            String      @id @default(cuid())
+  loanID        String      @unique
+  customerID    String
+  barang        String
+  nilaiPinjaman Float
+  potongan      Float
+  netCair       Float
+  tanggalGadai  DateTime
+  jatuhTempo    DateTime
+  status        LoanStatus  @default(AKTIF)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  // Relations
+  nasabah       Nasabah     @relation(fields: [customerID], references: [customerID])
+  transactions  Transaction[]
+  inventory     Inventory?
+}
+
+model Transaction {
+  id            String           @id @default(cuid())
+  transactionID String           @unique
+  loanID        String
+  customerID    String
+  jenisTransaksi JenisTransaksi
+  jumlah        Float
+  denda         Float            @default(0)
+  totalBayar    Float
+  metodePembayaran MetodePembayaran @default(CASH)
+  tanggal       DateTime         @default(now())
+  createdAt     DateTime         @default(now())
+  
+  // Relations
+  loan          Loan             @relation(fields: [loanID], references: [loanID])
+  nasabah       Nasabah          @relation(fields: [customerID], references: [customerID])
+  cashFlow      CashFlow[]
+}
+
+model Inventory {
+  id          String         @id @default(cuid())
+  loanID      String         @unique
+  customerID  String
+  barang      String
+  kondisi     String
+  status      InventoryStatus @default(DITAHAN)
+  tanggalMasuk DateTime      @default(now())
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  
+  // Relations
+  loan        Loan           @relation(fields: [loanID], references: [loanID])
+}
+
+model CashFlow {
+  id            String      @id @default(cuid())
+  transactionID String?
+  jenis         JenisCashFlow
+  jumlah        Float
+  sumberDana    SumberDana
+  keterangan    String
+  tanggal       DateTime    @default(now())
+  createdAt     DateTime    @default(now())
+  
+  // Relations
+  transaction   Transaction? @relation(fields: [transactionID], references: [transactionID])
+}
+
+model Cabang {
+  id        String         @id @default(cuid())
+  nama      String
+  alamat    String
+  telepon   String
+  status    CabangStatus   @default(AKTIF)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
+enum CabangStatus {
+  AKTIF
+  NONAKTIF
+}
+
+enum JenisKelamin {
+  LAKI_LAKI
+  PEREMPUAN
+}
+
+enum LoanStatus {
+  AKTIF
+  TEBUS
+  DILELANG
+}
+
+enum JenisTransaksi {
+  PINJAM
+  TEBUS
+  PERPANJANG
+}
+
+enum InventoryStatus {
+  DITAHAN
+  DILELANG
+  TERTEBUS
+}
+
+enum JenisCashFlow {
+  MASUK
+  KELUAR
+}
+
+enum SumberDana {
+  CASH
+  BANK
+}
+
+enum MetodePembayaran {
+  CASH
+  BANK
+}
